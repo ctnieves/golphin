@@ -3,31 +3,16 @@ package golphin
 import (
 	"io"
 	"os"
-	"path/filepath"
 )
 
 func (g *Golphin) Subscribe(address string) error {
-	g.MemoryLocations.Add(address)
+	g.MemoryLocations.Add(MemoryAddress(address))
 	return nil
 }
 
 func (g *Golphin) Unsubscribe(address string) error {
-	g.MemoryLocations.Remove(address)
+	g.MemoryLocations.Remove(MemoryAddress(address))
 	return nil
-}
-
-func (g *Golphin) WriteLocations() error {
-	locations_name := filepath.Join(g.SocketPath, "Locations.txt")
-	file, err := os.OpenFile(string(locations_name), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	defer file.Close()
-
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(g.GetLocationsBytes())
-
-	return err
 }
 
 func (g *Golphin) GetLocationsBytes() []byte {
