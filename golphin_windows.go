@@ -5,12 +5,12 @@ package golphin
 import (
 	"C"
 	"errors"
-	//"fmt"
+	"strings"
 	"bytes"
 	"unicode/utf16"
 	"unsafe"
-	//"log"
-	//"strings"
+	"strconv"
+	"sync"
 
 	j32 "github.com/JamesHovious/w32"
 	w32 "golang.org/x/sys/windows"
@@ -28,8 +28,11 @@ type Win32Dolphin interface {
 
 type Win32Container struct {
 	MemoryReference MemoryMap
+	ReferenceMutex *sync.Mutex
 	EmulatorProc    w32.Handle
 }
+
+const BASE_ADDRESS = 0x7FFF0000
 
 const (
 	ALL_ACCESS                uint32 = 0x001F0FFF
@@ -49,7 +52,8 @@ const (
 
 func (g *Golphin) Init() error {
 	g.PlatformContainer = &Win32Container{
-		MemoryReference: make(MemoryMap, 1),
+		MemoryReference: make(MemoryMap, 500),
+		ReferenceMutex:  &sync.Mutex{},
 	}
 	err := g.BindMemory()
 
@@ -90,7 +94,6 @@ func GetProcessByName(name string) (w32.Handle, error) {
 	for {
 		name_bytes := []byte(string(utf16.Decode(process.ExeFile[:])))
 		process_name := string(bytes.Trim(name_bytes, "\x00"))
-		//fmt.Println(process_name + " IS ",[]byte(process_name))
 
 		if process_name == name {
 			return w32.OpenProcess(ALL_ACCESS, false, process.ProcessID)
@@ -107,7 +110,32 @@ func GetProcessByName(name string) (w32.Handle, error) {
 }
 
 func (g *Golphin) ReadProcessMemory(address string, size uint) ([]byte, error) {
-
 	platform := g.PlatformContainer.(*Win32Container)
-	return j32.ReadProcessMemory(platform.EmulatorProc, address, size)
+	var address_uint uint32 = BASE_ADDRESS
+	// if the address is a pointer
+	if strings.Contains(address, " ") {
+		split := strings.Split(address, " ")
+		base, err := strconv.ParseUint(split[0], 16, 32)
+		offset, err := strconv.ParseUint(split[1], 16, 32)
+
+		if err != nil {
+			return nil, err
+		}
+
+		base_val := uint32(base)
+		offset_val := uint32(offset)
+
+		address_uint += base_val + offset_val
+	} else {
+		temp, err := strconv.ParseUint(address, 16, 32)
+		if err != nil {
+			return nil, err
+		}
+		address_uint += uint32(temp)
+	}
+
+
+	memory_bytes, err := j32.ReadProcessMemory(j32.HANDLE(platform.EmulatorProc), address_uint, size)
+
+	return memory_bytes, err
 }
