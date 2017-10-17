@@ -6,14 +6,14 @@ import (
 	"C"
 	"errors"
 	//"fmt"
-	"unsafe"
 	"bytes"
 	"unicode/utf16"
+	"unsafe"
 	//"log"
 	//"strings"
 
-	w32 "golang.org/x/sys/windows"
 	j32 "github.com/JamesHovious/w32"
+	w32 "golang.org/x/sys/windows"
 )
 
 // Platform specific interface definitions are not required but help clear
@@ -28,7 +28,7 @@ type Win32Dolphin interface {
 
 type Win32Container struct {
 	MemoryReference MemoryMap
-	EmulatorProc w32.Handle
+	EmulatorProc    w32.Handle
 }
 
 const (
@@ -92,7 +92,7 @@ func GetProcessByName(name string) (w32.Handle, error) {
 		process_name := string(bytes.Trim(name_bytes, "\x00"))
 		//fmt.Println(process_name + " IS ",[]byte(process_name))
 
-		if  process_name == name {
+		if process_name == name {
 			return w32.OpenProcess(ALL_ACCESS, false, process.ProcessID)
 		}
 
@@ -111,4 +111,3 @@ func (g *Golphin) ReadProcessMemory(address string, size uint) ([]byte, error) {
 	platform := g.PlatformContainer.(*Win32Container)
 	return j32.ReadProcessMemory(platform.EmulatorProc, address, size)
 }
-

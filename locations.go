@@ -1,6 +1,7 @@
 package golphin
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
@@ -19,7 +20,7 @@ func (g *Golphin) GetLocationsBytes() []byte {
 	list := g.MemoryLocations.List()
 	locations := ""
 	for _, addy := range list {
-		locations += addy.(string) + "\n"
+		locations += fmt.Sprintf("%v", addy) + "\n"
 	}
 	return []byte(locations)
 }

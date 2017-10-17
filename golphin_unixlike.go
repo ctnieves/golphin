@@ -33,24 +33,25 @@ type UnixlikeContainer struct {
 }
 
 func (g *Golphin) Init() error {
-	g.PlatformContainer = &UnixLikeContainer{
-		SocketBuffer:    make([]byte, 9096),
-		SocketMutex:     sync.Mutex{},
+	platform := &UnixlikeContainer{
+		SocketBuffer: make([]byte, 9096),
+		SocketMutex:  sync.Mutex{},
 	}
+	g.PlatformContainer = platform
 
-	err = Dolphin.SetPath("/Users/christian/Desktop/FM/Dolphin.app/Contents/Resources/User")
+	err := g.SetPath("/Users/christian/Desktop/FM/Dolphin.app/Contents/Resources/User")
 
 	if g.DolphinPath == "" {
 		return errors.New("Failed to initialize. DolphinPath not set. ")
 	} else {
-		err := g.WriteLocations()
+		err = g.CommitLocations()
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err := g.BindMemory()
+	err = g.BindMemory()
 	return err
 }
 
@@ -121,15 +122,18 @@ func (g *Golphin) ReadMemory() (err error) {
 		log.Fatalln(err)
 		return
 	} else {
-		g.MemoryUpdate <- MemoryPair{s[0], decoded}
+		g.MemoryUpdate <- MemoryPair{MemoryAddress(s[0]), decoded}
 	}
 
 	return
 }
 
 func (g *Golphin) CommitLocations() error {
-	locations_name := filepath.Join(g.SocketPath, "Locations.txt")
+	platform := g.PlatformContainer.(*UnixlikeContainer)
+
+	locations_name := filepath.Join(platform.SocketPath, "Locations.txt")
 	file, err := os.OpenFile(string(locations_name), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+
 	defer file.Close()
 
 	if err != nil {
