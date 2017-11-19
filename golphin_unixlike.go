@@ -103,6 +103,10 @@ func (g *Golphin) BindMemory() error {
 }
 
 func (g *Golphin) ReadMemory() (err error) {
+	if !g.Looping {
+		close(g.MemoryUpdate)
+		return nil
+	}
 	platform := g.PlatformContainer.(*UnixlikeContainer)
 
 	platform.SocketMutex.Lock()
